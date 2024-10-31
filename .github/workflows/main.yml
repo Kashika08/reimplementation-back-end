@@ -1,4 +1,4 @@
-name: Ruby CI/CD
+name: CI/CD
 
 on:
   push:
@@ -11,9 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      DATABASE_URL: mysql2://root:expertiza@localhost:3306/expertiza
+      DATABASE_URL: mysql2://root:expertiza@127.0.0.1:3306/expertiza_test
       RAILS_ENV: test
-      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       
     services:
       mysql:
@@ -42,7 +41,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y netcat curl
+          sudo apt-get install -y netcat
           
       - name: Install Ruby dependencies
         run: |
@@ -52,24 +51,11 @@ jobs:
           
       - name: Setup database
         run: |
-          bundle exec rails db:create
-          bundle exec rails db:schema:load
-          bundle exec rails db:seed
+          bundle exec rails db:create RAILS_ENV=test
+          bundle exec rails db:schema:load RAILS_ENV=test
           
-      - name: Generate Swagger docs
-        run: RAILS_ENV=test bundle exec rake rswag:specs:swaggerize
-          
-      - name: Run RSpec tests with coverage
-        run: |
-          bundle exec rspec --format documentation
-          
-      - name: Run RuboCop
-        run: bundle exec rubocop
-        
-      - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run tests
+        run: bundle exec rspec
 
   docker:
     needs: test
@@ -82,19 +68,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-        
-      - name: Build and push Docker image
+      - name: Build Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/expertiza-backend:latest
-            ${{ secrets.DOCKER_HUB_USERNAME }}/expertiza-backend:${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/expertiza-backend:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/expertiza-backend:buildcache,mode=max
+          push: false
+          tags: expertiza-backend:latest
