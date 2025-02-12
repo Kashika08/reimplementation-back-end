@@ -55,7 +55,7 @@ jobs:
           bundle exec rails db:schema:load RAILS_ENV=test
           
       - name: Run tests
-        run: bundle exec rspec spec/models
+        run: bundle exec rspec spec/
 
   docker:
     needs: test
