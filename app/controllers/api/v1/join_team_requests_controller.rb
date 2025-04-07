@@ -12,7 +12,14 @@ class Api::V1::JoinTeamRequestsController < ApplicationController
 
   #checks if the current user is a student
   def action_allowed?
-    @current_user.student?
+    case action_name
+    when 'index'
+      @current_user.administrator?
+    when 'create', 'show', 'update', 'destroy', 'decline'
+      @current_user.student?
+    else
+      false
+    end
   end
 
   # GET api/v1/join_team_requests
